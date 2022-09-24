@@ -149,6 +149,8 @@ net.ipv4.tcp_max_tw_buckets = 6000000
 net.ipv4.tcp_tw_recycle = 1
 net.ipv4.tcp_tw_reuse = 1
 
+EOF
+
 sudo sysctl -p /etc/sysctl.d/00-sysctl.conf
 
 sudo wget -O /tmp/softether-vpnserver.tar.gz https://github.com/SoftEtherVPN/SoftEtherVPN_Stable/releases/download/v4.30-9696-beta/softether-vpnserver-v4.30-9696-beta-2019.07.08-linux-x64-64bit.tar.gz
@@ -172,7 +174,7 @@ sudo find /usr/local/vpnserver -type d -exec chmod 700 {} \;
 sudo chmod +x /usr/local/vpnserver/vpncmd 
 sudo chmod +x /usr/local/vpnserver/vpnserver
 
-sudo tee >> EOF 
+sudo tee -a >/etc/systemd/system/softether.service <<EOF 
 
 [Unit]
 Description=SoftEther VPN Server
