@@ -18,6 +18,10 @@ grep -qxF 'exclude = kernel*' /etc/yum/yum-cron.conf || echo -e "\n# Exclude Ker
 sudo systemctl start yum-cron
 sudo systemctl enable yum-cron
 
+# May need to adjust conf file
+tee -a >/etc/sysctl.d/99-sysctl.conf <<EOF
+
+
 # Tuning Virtual Memory
 # A low value avoids swapping processes out of memory, which usually decreases latency, at the cost of I/O performance. 
 # The default value of vm.swappiness is 60
