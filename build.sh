@@ -19,7 +19,7 @@ sudo systemctl start yum-cron
 sudo systemctl enable yum-cron
 
 # May need to adjust conf file
-tee -a >/etc/sysctl.d/99-sysctl.conf <<EOF
+sudo tee -a >/etc/sysctl.d/99-sysctl.conf <<EOF
 
 
 # Tuning Virtual Memory
