@@ -1,3 +1,7 @@
+
+# Script based on guide from https://blog.yasithab.com/centos/softether-vpn-on-centos-7/
+# Will likely need to modify /etc/sysctl.d/99-sysctl.conf directory to suit your filesystem
+
 sudo yum update -y
 sudo yum install -y epel-release
 
@@ -151,7 +155,7 @@ net.ipv4.tcp_tw_reuse = 1
 
 EOF
 
-sudo sysctl -p /etc/sysctl.d/00-sysctl.conf
+sudo sysctl -p /etc/sysctl.d/99-sysctl.conf
 
 sudo wget -O /tmp/softether-vpnserver.tar.gz https://github.com/SoftEtherVPN/SoftEtherVPN_Stable/releases/download/v4.30-9696-beta/softether-vpnserver-v4.30-9696-beta-2019.07.08-linux-x64-64bit.tar.gz
 
