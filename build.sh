@@ -1,0 +1,211 @@
+sudo yum update -y
+sudo yum install -y epel-release
+
+sudo yum install -y vim wget unzip yum-utils htop
+
+# Install Development Tools
+sudo yum group install -y "Development Tools" 
+
+sudo yum -y install yum-cron
+
+sudo sed -i 's,^update_cmd =.*$,update_cmd = default,' /etc/yum/yum-cron.conf
+sudo sed -i 's,^apply_updates =.*$,apply_updates = yes,' /etc/yum/yum-cron.conf
+
+# Exclude kernel upgrades
+grep -qxF 'exclude = kernel*' /etc/yum/yum-cron.conf || echo -e "\n# Exclude Kernel Upgrades \nexclude = kernel*" | sudo tee -a /etc/yum/yum-cron.conf
+
+# Start and enable yum-cron service
+sudo systemctl start yum-cron
+sudo systemctl enable yum-cron
+
+# Tuning Virtual Memory
+# A low value avoids swapping processes out of memory, which usually decreases latency, at the cost of I/O performance. 
+# The default value of vm.swappiness is 60
+vm.swappiness = 10
+
+# vm.dirty_background_ratio is the percentage of system memory which when dirty then system can start writing data to the disks.
+# vm.dirty_ratio is percentage of system memory which when dirty, the process doing writes would block and write out dirty pages to the disks.
+# This tunable depends on what your system running, if you run large database its recommend to keep these values low 
+# to avoid I/O bottle-necks and when the system load increases.
+vm.dirty_ratio = 40
+vm.dirty_background_ratio = 10
+
+# Avoid a smurf attack
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+ 
+# Turn on protection for bad icmp error messages
+net.ipv4.icmp_ignore_bogus_error_responses = 1
+ 
+# Turn on syncookies for SYN flood attack protection
+net.ipv4.tcp_syncookies = 1
+ 
+# Turn on and log spoofed, source routed, and redirect packets
+net.ipv4.conf.all.log_martians = 1
+net.ipv4.conf.default.log_martians = 1
+ 
+# No source routed packets here
+net.ipv4.conf.all.accept_source_route = 0
+net.ipv4.conf.default.accept_source_route = 0
+ 
+# Turn on reverse path filtering
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 1
+ 
+# Make sure no one can alter the routing tables
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv4.conf.all.secure_redirects = 0
+net.ipv4.conf.default.secure_redirects = 0
+ 
+# Don't act as a router
+net.ipv4.ip_forward = 0
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.default.send_redirects = 0
+ 
+# Turn on execshild
+kernel.randomize_va_space = 1
+ 
+# Disable IPv6
+net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1
+ 
+# Increase system file descriptor limit
+fs.file-max = 65535                          
+
+# Allow for more PIDs (to reduce rollover problems)
+kernel.pid_max = 65536
+
+# Increase system IP port limits
+# For heavy traffic network servers, you may need to increase the networking port range.
+# net.ipv4.ip_local_port_range defines the minimum and maximum port a networking connection can use as its source (local) port.
+# This applies to both TCP and UDP connections.
+net.ipv4.ip_local_port_range = 2000 65000
+
+# The maximum backlog an application can request.
+# Make sure to increase application backlog as well if changed (Ex: Nginx backlog value must be <= net.core.somaxconn value)
+net.core.somaxconn = 16384
+                                     
+# The maximum socket receive buffer size in bytes
+net.core.rmem_max = 8388608          
+
+# The maximum socket send buffer size in bytes
+net.core.wmem_max = 8388608
+
+# The default size of receive buffers used by sockets in bytes. rmem_default should be no greater than rmem_max
+net.core.rmem_default = 65536
+
+# The default size of send buffers used by sockets in bytes. wmem_default should be no greater than wmem_max
+net.core.wmem_default = 65536
+
+# Max number of packets that can be queued on interface input.
+# If kernel is receiving packets faster than can be processed this queue increases
+net.core.netdev_max_backlog = 16384
+
+# TCP Window Scaling is enabled by default on Red Hat Enterprise Linux
+net.ipv4.tcp_window_scaling = 1
+
+# Increase TCP max buffer size setable using setsockopt()
+# The first value tells the kernel the minimum receive buffer for each TCP connection, and this buffer is always allocated to a TCP socket, 
+# even under high pressure on the system. The second value specified tells the kernel the default receive buffer allocated for each TCP socket. 
+# This value overrides the /proc/sys/net/core/rmem_default and /proc/sys/net/core/wmem_default value used by other protocols. 
+# The third and last value specified in this variable specifies the maximum receive buffer that can be allocated for a TCP socket
+net.ipv4.tcp_rmem = 8192 873800 8388608
+net.ipv4.tcp_wmem = 4096 655360 8388608
+
+# Increase max half-open connections 
+# which did not yet receive an acknowledgment from connecting client
+net.ipv4.tcp_max_syn_backlog = 65536 
+
+# If enabled, time out the congestion window after an idle period.  An idle period is defined as the current RTO (retransmission timeout). 
+# If disabled, the congestion window will not be timed out after an idle period. 
+# Many people suggest disabling this, which should help to improve performance in some cases
+net.ipv4.tcp_slow_start_after_idle = 0 
+
+# The tcp_mem variable defines how the TCP stack should behave when it comes to memory usage (value is in pages).
+# DO NOT touch tcp_mem. It’s already auto-tuned very well by Linux based on the amount of RAM
+# net.ipv4.tcp_mem = 8388608 8388608 8388608
+
+# Increase max TCP orphans
+# Maximum number of TCP sockets not attached to any user file handle, held by system. 
+# If this number is exceeded orphaned connections are reset immediately and warning is printed. 
+# This limit exists only to prevent simple DoS attacks
+net.ipv4.tcp_max_orphans = 262144
+
+# Only retry creating TCP connections twice
+# Minimize the time it takes for a connection attempt to fail
+net.ipv4.tcp_synack_retries = 2
+net.ipv4.tcp_syn_retries = 2
+
+# Timeout closing of TCP connections after 7 seconds
+net.ipv4.tcp_fin_timeout = 7
+
+# Increase the tcp-time-wait buckets pool size to prevent simple DOS attacks. Increase the recycling time of sockets, 
+# avoiding large numbers of them staying in the TIME_WAIT status 
+net.ipv4.tcp_max_tw_buckets = 6000000
+net.ipv4.tcp_tw_recycle = 1
+net.ipv4.tcp_tw_reuse = 1
+
+sudo sysctl -p /etc/sysctl.d/00-sysctl.conf
+
+sudo wget -O /tmp/softether-vpnserver.tar.gz https://github.com/SoftEtherVPN/SoftEtherVPN_Stable/releases/download/v4.30-9696-beta/softether-vpnserver-v4.30-9696-beta-2019.07.08-linux-x64-64bit.tar.gz
+
+sudo tar xfz /tmp/softether-vpnserver.tar.gz -C /usr/local
+
+# CD into correct location
+cd /usr/local/vpnserver
+
+# Build executables
+make
+
+# Adding a service account for softether
+sudo useradd --system --no-create-home softether
+
+sudo chown -R softether:softether /usr/local/vpnserver
+
+sudo find /usr/local/vpnserver -type f -exec chmod 600 {} \;
+sudo find /usr/local/vpnserver -type d -exec chmod 700 {} \;
+
+sudo chmod +x /usr/local/vpnserver/vpncmd 
+sudo chmod +x /usr/local/vpnserver/vpnserver
+
+sudo tee >> EOF 
+
+[Unit]
+Description=SoftEther VPN Server
+After=network.target auditd.service
+ConditionPathExists=!/usr/local/vpnserver/do_not_run
+
+[Service]
+Type=forking
+TasksMax=16777216
+User=softether
+Group=softether
+ExecStart=/usr/local/vpnserver/vpnserver start
+ExecStop=/usr/local/vpnserver/vpnserver stop
+KillMode=process
+Restart=on-failure
+
+# Hardening
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=full
+ReadOnlyDirectories=/
+ReadWriteDirectories=/usr/local/vpnserver
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_BROADCAST CAP_NET_RAW CAP_SYS_NICE CAP_SYSLOG CAP_SETUID
+
+[Install]
+WantedBy=multi-user.target
+
+EOF
+
+# CAP_NET_BIND_SERVICE to grant low-numbered port access to the softether process
+sudo setcap CAP_NET_BIND_SERVICE=+eip /usr/local/vpnserver/vpnserver
+
+sudo systemctl daemon-reload
+sudo systemctl start softether.service
+sudo systemctl enable softether.service
+
+sudo rm -f /tmp/softether-vpnserver.tar.gz 
+
+
+
